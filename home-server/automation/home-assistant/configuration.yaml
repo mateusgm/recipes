@@ -1,0 +1,23 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+evohome:
+  username: !secret evohome_username
+  password: !secret evohome_password
+
+influxdb:
+  api_version: 2
+  ssl: false
+  host: localhost
+  port: 8086
+  bucket: !secret influxdb_bucket
+  organization: !secret influxdb_org
+  token: !secret influxdb_token

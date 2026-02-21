@@ -1,0 +1,69 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    env_file: .env
+    ports:
+      - "${JELLYFIN_PORT}:8096"
+    volumes:
+      - ./apps/jellyfin/config:/config
+      - ./apps/jellyfin/cache:/cache
+      - ./media:/media
+      - ${GPU_DEVICE}:${GPU_DEVICE}
+    restart: unless-stopped
+
+  jellyseerr:
+    image: ghcr.io/fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    env_file: .env
+    ports:
+      - "${JELLYSEERR_PORT}:5055"
+    volumes:
+      - ./apps/jellyseerr/config:/app/config
+      - ./media:/media
+    restart: unless-stopped
+
+  qbittorrent:
+    image: linuxserver/qbittorrent
+    container_name: qbittorrent
+    env_file: .env
+    ports:
+      - "${QBITTORRENT_PORT}:8080"
+      - "${QBITTORRENT_TORRENT_PORT}:6881/tcp"
+      - "${QBITTORRENT_TORRENT_PORT}:6881/udp"
+    volumes:
+      - ./apps/qbittorrent/config:/config
+      - ./media:/downloads
+    restart: unless-stopped
+
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    env_file: .env
+    ports:
+      - "${JACKETT_PORT}:9117"
+    volumes:
+      - ./apps/jackett/config:/config
+    restart: unless-stopped
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    env_file: .env
+    ports:
+      - "${RADARR_PORT}:7878"
+    volumes:
+      - ./apps/radarr/config:/config
+      - ./media:/movies
+    restart: unless-stopped
+
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    env_file: .env
+    ports:
+      - "${SONARR_PORT}:8989"
+    volumes:
+      - ./apps/sonarr:/config
+      - ./media:/series
+    restart: unless-stopped

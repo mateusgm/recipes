@@ -1,0 +1,59 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    network_mode: host
+    volumes:
+      - ./home-assistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    env_file: .env
+    devices:
+      - ${ZIGBEE_DEVICE}:${ZIGBEE_DEVICE}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    user: "${PUID}:${PGID}"
+    ports:
+      - "${MOSQUITTO_PORT}:1883"
+    volumes:
+      - ./mosquitto:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    env_file: .env
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    user: "${PUID}:${PGID}"
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./grafana:/etc/grafana
+      - ./grafana/data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2
+    container_name: influxdb
+    env_file: .env
+    volumes:
+      - ./influxdb:/etc/influxdb2
+      - ./influxdb/data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "curl", "-sI", "http://127.0.0.1:8086/ping"]
+      interval: 30s
+      timeout: 1s
+      retries: 24
+    ports:
+      - "${INFLUXDB_PORT}:8086"
+    restart: unless-stopped
