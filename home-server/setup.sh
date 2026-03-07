@@ -2,7 +2,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo "==> Home server setup"
 echo "    Recipe dir: $SCRIPT_DIR"
@@ -47,50 +46,7 @@ if ! command -v gh &>/dev/null; then
   sudo apt-get install -y gh
 fi
 
-# ── 2. Apply secret templates ──────────────────────────────────────
-
-echo ""
-echo "==> Applying secret templates..."
-"$REPO_DIR/apply-secrets.sh" "$SCRIPT_DIR"
-
-# ── 3. Create volume directories ───────────────────────────────────
-
-echo ""
-echo "==> Creating volume directories..."
-
-# Automation stack
-mkdir -p "$SCRIPT_DIR/automation/home-assistant"
-mkdir -p "$SCRIPT_DIR/automation/mosquitto/"{data,log}
-mkdir -p "$SCRIPT_DIR/automation/grafana/data"
-mkdir -p "$SCRIPT_DIR/automation/influxdb/data"
-
-# Media stack
-mkdir -p "$SCRIPT_DIR/media-server/apps/"{jellyfin/{config,cache},jellyseerr/config,qbittorrent/config,jackett/config,radarr/config,sonarr}
-mkdir -p "$SCRIPT_DIR/media-server/media"
-
-# Fix ownership
-sudo chown -R "$(id -u):$(id -g)" "$SCRIPT_DIR/automation" "$SCRIPT_DIR/media-server"
-
-# ── 4. Start services ──────────────────────────────────────────────
-
-echo ""
-echo "==> Starting automation stack..."
-docker compose -f "$SCRIPT_DIR/automation/docker-compose.yml" up -d
-
-echo ""
-echo "==> Starting media server stack..."
-docker compose -f "$SCRIPT_DIR/media-server/docker-compose.yml" up -d
-
-# ── 5. Install HACS in Home Assistant ──────────────────────────────
-
-echo ""
-echo "==> Installing HACS in Home Assistant..."
-echo "    Waiting for Home Assistant to start..."
-sleep 15
-docker exec homeassistant sh -c 'wget -O - https://get.hacs.xyz | bash -'
-docker compose -f "$SCRIPT_DIR/automation/docker-compose.yml" restart homeassistant
-
-# ── 6. Interactive steps (last) ────────────────────────────────────
+# ── 2. Interactive steps (last) ────────────────────────────────────
 
 echo ""
 echo "========================================="
@@ -98,36 +54,19 @@ echo "  Interactive setup steps"
 echo "========================================="
 echo ""
 
-echo "==> Setting up Mosquitto MQTT password..."
-echo "    You will be prompted to create a password for the 'homeassistant' MQTT user."
-docker exec -it mosquitto mosquitto_passwd -c /mosquitto/config/passwd homeassistant
-docker compose -f "$SCRIPT_DIR/automation/docker-compose.yml" restart mosquitto
-
-echo ""
 echo "==> Setting up Tailscale..."
 echo "    Follow the link to authenticate this device."
 sudo tailscale up
 
 echo ""
 echo "========================================="
-echo "  Setup complete!"
+echo "  Base setup complete!"
 echo "========================================="
 echo ""
-echo "  Services running:"
-echo "    - Home Assistant  (host network, port 8123)"
-echo "    - Grafana         (port from .env, default 3000)"
-echo "    - InfluxDB        (port from .env, default 8086)"
-echo "    - Mosquitto MQTT  (port from .env, default 1883)"
-echo "    - Jellyfin        (port from .env, default 8096)"
-echo "    - Jellyseerr      (port from .env, default 5055)"
-echo "    - qBittorrent     (port from .env, default 8080)"
-echo "    - Jackett         (port from .env, default 9117)"
-echo "    - Radarr          (port from .env, default 7878)"
-echo "    - Sonarr          (port from .env, default 8989)"
+echo "  Installed:"
+echo "    - Docker"
+echo "    - Tailscale"
+echo "    - GitHub CLI"
+echo "    - System utilities (curl, git, vim, tmux, zsh, envsubst)"
 echo ""
-echo "  Next steps:"
-echo "    - Complete Home Assistant onboarding at http://<host>:8123"
-echo "    - Complete InfluxDB setup at http://<host>:8086"
-echo "    - Configure Grafana at http://<host>:3000"
-echo "    - Set up Jellyfin at http://<host>:8096"
-echo "    - Configure Radarr/Sonarr/Jackett for media automation"
+echo "  Next: run a recipe setup script (e.g. home-automation/setup.sh)"
