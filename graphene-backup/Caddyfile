@@ -1,4 +1,8 @@
-:443 {
-	tls internal
+{
+	acme_ca https://step-ca:9000/acme/acme/directory
+	acme_ca_root /step-ca/certs/root_ca.crt
+}
+
+{$ACME_HOSTNAME}:443 {
 	reverse_proxy rclone-webdav:8083
 }

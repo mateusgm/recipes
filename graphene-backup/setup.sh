@@ -49,13 +49,44 @@ echo ""
 echo "==> Creating volume directories..."
 mkdir -p "$SCRIPT_DIR/data/backups"
 
-# ── 5. Start services ─────────────────────────────────────────────
+# ── 5. Bootstrap step-ca (private ACME certificate authority) ─────
+
+echo ""
+echo "==> Bootstrapping step-ca..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d step-ca
+
+echo "    Waiting for step-ca to become healthy..."
+timeout=60
+while [ $timeout -gt 0 ]; do
+  if docker inspect --format='{{.State.Health.Status}}' step-ca 2>/dev/null | grep -q healthy; then
+    break
+  fi
+  sleep 2
+  timeout=$((timeout - 2))
+done
+
+if [ $timeout -le 0 ]; then
+  echo "Error: step-ca did not become healthy within 60 seconds"
+  docker logs step-ca
+  exit 1
+fi
+
+echo "    step-ca is healthy."
+
+# ── 6. Extract root CA certificate ────────────────────────────────
+
+echo ""
+echo "==> Extracting root CA certificate..."
+docker cp step-ca:/home/step/certs/root_ca.crt "$SCRIPT_DIR/root_ca.crt"
+echo "    Saved to $SCRIPT_DIR/root_ca.crt"
+
+# ── 7. Start services ─────────────────────────────────────────────
 
 echo ""
 echo "==> Starting graphene-backup stack..."
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
-# ── 6. Summary ─────────────────────────────────────────────────────
+# ── 8. Summary ─────────────────────────────────────────────────────
 
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/.env"
@@ -66,15 +97,23 @@ echo "  Setup complete!"
 echo "========================================="
 echo ""
 echo "  Services running:"
+echo "    - step-ca       (private ACME CA, internal)"
 echo "    - Caddy reverse proxy (HTTPS, port ${HTTPS_PORT:-8443})"
 echo "    - rclone WebDAV  (internal, behind Caddy)"
 echo "    - rclone sync    (cron: ${SYNC_SCHEDULE:-0 */6 * * *})"
 echo ""
-echo "  GrapheneOS Seedvault configuration:"
-echo "    - Server URL: https://<host>:${HTTPS_PORT:-8443}"
-echo "    - Username:   (from secrets.env WEBDAV_USER)"
-echo "    - Password:   (from secrets.env WEBDAV_PASS)"
-echo "    - Note: uses a self-signed certificate"
+echo "  GrapheneOS SeedVault configuration:"
+echo "    - Server URL: https://${ACME_HOSTNAME:-<hostname>}:${HTTPS_PORT:-8443}"
+echo "    - Username:   (from .env WEBDAV_USER)"
+echo "    - Password:   (from .env WEBDAV_PASS)"
+echo ""
+echo "  IMPORTANT: Install the CA certificate on your phone!"
+echo "    1. Transfer root_ca.crt to your GrapheneOS device:"
+echo "       $SCRIPT_DIR/root_ca.crt"
+echo "    2. On the device, go to:"
+echo "       Settings > Security > Encryption & credentials"
+echo "       > Install a certificate > CA certificate"
+echo "    3. Select the root_ca.crt file and confirm"
 echo ""
 echo "  Backups are stored locally at:"
 echo "    $SCRIPT_DIR/data/backups"

@@ -1,15 +1,38 @@
 services:
+  step-ca:
+    image: smallstep/step-ca:latest
+    container_name: step-ca
+    volumes:
+      - step_ca:/home/step
+    environment:
+      DOCKER_STEPCA_INIT_NAME: Graphene Backup CA
+      DOCKER_STEPCA_INIT_DNS_NAMES: step-ca,localhost
+      DOCKER_STEPCA_INIT_ACME: "true"
+    expose:
+      - "9000"
+    restart: unless-stopped
+
   caddy:
     image: caddy:2-alpine
     container_name: caddy-webdav
+    networks:
+      default:
+        aliases:
+          - ${ACME_HOSTNAME}
     ports:
       - "${HTTPS_PORT}:443"
+    env_file:
+      - .env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - step_ca:/step-ca:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - rclone-webdav
+      step-ca:
+        condition: service_healthy
+      rclone-webdav:
+        condition: service_started
     restart: unless-stopped
 
   rclone-webdav:
@@ -50,5 +73,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  step_ca:
   caddy_data:
   caddy_config:
