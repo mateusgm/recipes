@@ -1,0 +1,38 @@
+services:
+  rclone-webdav:
+    image: rclone/rclone:latest
+    container_name: rclone-webdav
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        rclone serve webdav /data/backups \
+          --addr 0.0.0.0:8083 \
+          --user "$$WEBDAV_USER" \
+          --pass "$$WEBDAV_PASS" \
+          --vfs-cache-mode writes
+    env_file:
+      - .env
+      - secrets.env
+    ports:
+      - "${WEBDAV_PORT}:8083"
+    volumes:
+      - ./data/backups:/data/backups
+    restart: unless-stopped
+
+  rclone-sync:
+    image: rclone/rclone:latest
+    container_name: rclone-sync
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo "Sync schedule: $$SYNC_SCHEDULE"
+        echo "$$SYNC_SCHEDULE rclone sync /data/backups protondrive:$$PROTON_REMOTE_PATH --config /config/rclone/rclone.conf --log-level INFO 2>&1" > /var/spool/cron/crontabs/root
+        crond -f -l 6
+    env_file:
+      - .env
+    volumes:
+      - ./data/backups:/data/backups:ro
+      - ./rclone.conf:/config/rclone/rclone.conf:ro
+    restart: unless-stopped
