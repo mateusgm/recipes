@@ -2,6 +2,8 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: caddy-webdav
+    env_file:
+      - .env
     ports:
       - "${HTTPS_PORT}:443"
     volumes:
@@ -10,12 +12,14 @@ services:
       - caddy_config:/config
     depends_on:
       - rclone-webdav
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile --watch
     restart: unless-stopped
 
   rclone-webdav:
     image: rclone/rclone:latest
     container_name: rclone-webdav
     entrypoint: /bin/sh
+    user: ${UID}:${GID}
     command:
       - -c
       - |
@@ -29,13 +33,14 @@ services:
     expose:
       - "8083"
     volumes:
-      - ./backups:/data/backups
+      - ./data:/data/backups
     restart: unless-stopped
 
   rclone-sync:
     image: rclone/rclone:latest
     container_name: rclone-sync
     entrypoint: /bin/sh
+    user: ${UID}:${GID}
     command:
       - -c
       - |
@@ -45,7 +50,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./backups:/data/backups:ro
+      - ./data:/data/backups:ro
       - ./rclone.conf:/config/rclone/rclone.conf:ro
     restart: unless-stopped
 
