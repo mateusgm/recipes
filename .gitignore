@@ -2,4 +2,3 @@ secrets.env
 secrets.yaml
 rclone.conf
 graphene-backup/.env
-graphene-backup/root_ca.crt
