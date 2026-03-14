@@ -1,4 +1,9 @@
-:443 {
-	tls internal
-	reverse_proxy rclone-webdav:8083
+{$HOSTNAME:0.0.0.0:443} {
+  reverse_proxy rclone-webdav:8083
+  tls {
+    issuer internal {
+      ca local
+      lifetime 168h
+    }
+  }
 }
