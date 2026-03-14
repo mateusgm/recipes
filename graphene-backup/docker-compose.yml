@@ -52,7 +52,7 @@ services:
     expose:
       - "8083"
     volumes:
-      - ./data/backups:/data/backups
+      - ./backups:/data/backups
     restart: unless-stopped
 
   rclone-sync:
@@ -68,7 +68,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data/backups:/data/backups:ro
+      - ./backups:/data/backups:ro
       - ./rclone.conf:/config/rclone/rclone.conf:ro
     restart: unless-stopped
 
