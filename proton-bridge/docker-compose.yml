@@ -5,41 +5,9 @@ services:
     container_name: protonmail-bridge
     volumes:
       - bridge_data:/root
-    expose:
-      - "143"
-      - "25"
-    restart: unless-stopped
-
-  stunnel-imap:
-    image: dweomer/stunnel:latest
-    container_name: stunnel-imap
-    environment:
-      STUNNEL_SERVICE: imaps
-      STUNNEL_ACCEPT: "993"
-      STUNNEL_CONNECT: protonmail-bridge:143
     ports:
-      - "${IMAPS_PORT}:993"
-    volumes:
-      - ./certs/cert.pem:/etc/stunnel/stunnel.pem:ro
-      - ./certs/key.pem:/etc/stunnel/stunnel.key:ro
-    depends_on:
-      - protonmail-bridge
-    restart: unless-stopped
-
-  stunnel-smtp:
-    image: dweomer/stunnel:latest
-    container_name: stunnel-smtp
-    environment:
-      STUNNEL_SERVICE: smtps
-      STUNNEL_ACCEPT: "465"
-      STUNNEL_CONNECT: protonmail-bridge:25
-    ports:
-      - "${SMTPS_PORT}:465"
-    volumes:
-      - ./certs/cert.pem:/etc/stunnel/stunnel.pem:ro
-      - ./certs/key.pem:/etc/stunnel/stunnel.key:ro
-    depends_on:
-      - protonmail-bridge
+      - "${IMAP_PORT}:143"
+      - "${SMTP_PORT}:25"
     restart: unless-stopped
 
 volumes:
