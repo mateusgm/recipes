@@ -43,6 +43,10 @@ meshnet_output=$(nordvpn set meshnet on 2>&1) || {
     fi
 }
 
+if [ -n "${MESHNET_NICKNAME:-}" ]; then
+    nordvpn meshnet set nickname "$MESHNET_NICKNAME" 2>&1 || true
+fi
+
 # Allow incoming connections from all mesh peers
 nordvpn meshnet peer list 2>/dev/null | grep '\.nord' | awk '{print $1}' | while read -r peer; do
     if [ -n "$peer" ]; then
@@ -51,6 +55,5 @@ nordvpn meshnet peer list 2>/dev/null | grep '\.nord' | awk '{print $1}' | while
 done
 
 echo "==> Meshnet ready"
-nordvpn meshnet peer list 2>/dev/null || true
 
 exec tail -f /dev/null
