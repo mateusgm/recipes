@@ -48,10 +48,8 @@ if [ -n "${MESHNET_NICKNAME:-}" ]; then
 fi
 
 # Allow incoming connections from all mesh peers
-nordvpn meshnet peer list 2>/dev/null | grep '\.nord' | awk '{print $1}' | while read -r peer; do
-    if [ -n "$peer" ]; then
-        nordvpn meshnet peer incoming allow "$peer" 2>&1 || true
-    fi
+nordvpn meshnet peer list 2>/dev/null | grep -oE '[a-zA-Z0-9._-]+\.nord' | while read -r peer; do
+    nordvpn meshnet peer incoming allow "$peer" 2>&1 || true
 done
 
 echo "==> Meshnet ready"
