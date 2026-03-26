@@ -2,12 +2,18 @@
 set -euo pipefail
 
 echo "==> Starting NordVPN daemon..."
-/etc/init.d/nordvpn start
+nordvpnd &
+disown
 
 echo "==> Waiting for daemon..."
 for i in $(seq 1 30); do
-    if nordvpn status &>/dev/null; then
+    if nordvpn account &>/dev/null 2>&1 || nordvpn status 2>&1 | grep -q -v "couldn't reach"; then
+        echo "    Daemon ready after ${i}s"
         break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "ERROR: Daemon failed to start after 30s"
+        exit 1
     fi
     sleep 1
 done
