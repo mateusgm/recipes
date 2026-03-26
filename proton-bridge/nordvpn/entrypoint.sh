@@ -43,7 +43,7 @@ meshnet_output=$(nordvpn set meshnet on 2>&1) || {
     fi
 }
 
-nordvpn meshnet peer incoming allow
+nordvpn set mesh-peer-incoming-connections allow
 
 echo "==> Meshnet ready"
 nordvpn meshnet peer list 2>/dev/null || true
