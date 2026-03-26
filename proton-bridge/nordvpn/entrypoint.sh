@@ -5,6 +5,9 @@ echo "==> Starting NordVPN daemon..."
 /etc/init.d/nordvpn start
 sleep 5
 
+echo "==> Disabling analytics prompts..."
+nordvpn set analytics off
+
 echo "==> Logging in..."
 nordvpn login --token "${NORDVPN_TOKEN}"
 
