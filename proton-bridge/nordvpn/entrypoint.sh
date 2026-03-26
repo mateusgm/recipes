@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Clean up stale state from previous runs
+rm -f /run/nordvpn/nordvpnd.pid /run/nordvpn/nordvpnd.sock
+
 echo "==> Starting D-Bus..."
 mkdir -p /run/dbus
+rm -f /run/dbus/pid
+dbus-uuidgen > /var/lib/dbus/machine-id 2>/dev/null || true
 dbus-daemon --system --nofork &
-sleep 1
+sleep 2
 
 echo "==> Starting NordVPN daemon..."
 nordvpnd &
@@ -12,19 +17,20 @@ disown
 
 echo "==> Waiting for daemon..."
 for i in $(seq 1 30); do
-    if nordvpn account &>/dev/null 2>&1 || nordvpn status 2>&1 | grep -q -v "couldn't reach"; then
+    if nordvpn status 2>&1 | grep -qi "disconnected\|connected\|status"; then
         echo "    Daemon ready after ${i}s"
         break
     fi
     if [ "$i" -eq 30 ]; then
         echo "ERROR: Daemon failed to start after 30s"
+        nordvpn status 2>&1 || true
         exit 1
     fi
     sleep 1
 done
 
 echo "==> Disabling analytics prompts..."
-nordvpn set analytics off
+nordvpn set analytics off || true
 
 echo "==> Logging in..."
 nordvpn login --token "${NORDVPN_TOKEN}"
