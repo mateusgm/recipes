@@ -43,7 +43,12 @@ meshnet_output=$(nordvpn set meshnet on 2>&1) || {
     fi
 }
 
-nordvpn set mesh-peer-incoming-connections allow
+# Allow incoming connections from all mesh peers
+nordvpn meshnet peer list 2>/dev/null | grep '\.nord' | awk '{print $1}' | while read -r peer; do
+    if [ -n "$peer" ]; then
+        nordvpn meshnet peer incoming allow "$peer" 2>&1 || true
+    fi
+done
 
 echo "==> Meshnet ready"
 nordvpn meshnet peer list 2>/dev/null || true
