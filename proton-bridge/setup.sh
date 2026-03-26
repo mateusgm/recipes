@@ -23,42 +23,30 @@ else
   echo "    Generated certs/cert.pem and certs/key.pem (valid 10 years)."
 fi
 
-# ── 2. Start bridge for initial login ───────────────────────────
+# ── 2. Build the image ──────────────────────────────────────────
 
 echo ""
-echo "==> Starting protonmail-bridge for initial login..."
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d protonmail-bridge
+echo "==> Building protonmail-bridge image..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" build protonmail-bridge
 
-echo "    Waiting for bridge to initialize..."
-sleep 5
+# ── 3. Initialize bridge and log in (interactive) ──────────────
 
 echo ""
-echo "========================================="
-echo "  Bridge is running — log in now"
-echo "========================================="
+echo "==> Initializing bridge (interactive login)..."
+echo "    This will open the bridge CLI."
+echo "    At the >>> prompt, run:"
+echo "      login     (authenticate with your Proton account)"
+echo "      info      (note the bridge-generated credentials)"
+echo "      exit      (quit the CLI)"
 echo ""
-echo "  1. Exec into the container:"
+
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm protonmail-bridge init
+
+# ── 4. Start the full stack ─────────────────────────────────────
+
 echo ""
-echo "       docker exec -it protonmail-bridge /bin/bash"
-echo ""
-echo "  2. At the prompt, log in:"
-echo ""
-echo "       login"
-echo ""
-echo "     Follow the prompts (username, password, 2FA)."
-echo ""
-echo "  3. Get your IMAP/SMTP credentials:"
-echo ""
-echo "       info"
-echo ""
-echo "     Save the bridge-generated password — you'll need it"
-echo "     for your email client."
-echo ""
-echo "  4. Type 'exit' to leave the container."
-echo ""
-echo "  5. Start the full stack:"
-echo ""
-echo "       docker compose -f $SCRIPT_DIR/docker-compose.yml up -d"
+echo "==> Starting full stack..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 echo ""
 
 # shellcheck disable=SC1091
