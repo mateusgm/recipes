@@ -5,3 +5,4 @@ graphene-backup/.env
 graphene-backup/root_ca.crt
 proton-bridge/certs
 graphene-backup/data/
+.env
