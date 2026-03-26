@@ -1,14 +1,33 @@
 services:
+  nordvpn:
+    build: ./nordvpn
+    image: nordvpn-meshnet:local
+    container_name: nordvpn-meshnet
+    hostname: ${MESHNET_HOSTNAME:-protonbridge}
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      - NORDVPN_TOKEN=${NORDVPN_TOKEN}
+    volumes:
+      - nordvpn_data:/var/lib/nordvpn
+    restart: unless-stopped
+
   protonmail-bridge:
     build: .
     image: protonmail-bridge:local
     container_name: protonmail-bridge
+    network_mode: "service:nordvpn"
+    depends_on:
+      - nordvpn
     volumes:
       - bridge_data:/root
-    ports:
-      - "${IMAP_PORT}:143"
-      - "${SMTP_PORT}:25"
     restart: unless-stopped
 
 volumes:
   bridge_data:
+  nordvpn_data:

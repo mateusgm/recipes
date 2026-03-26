@@ -3,16 +3,31 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "==> Proton Bridge IMAP proxy setup"
+echo "==> Proton Bridge + NordVPN Meshnet setup"
 echo "    Recipe dir: $SCRIPT_DIR"
 
-# ── 1. Build the image ──────────────────────────────────────────
+# ── 0. Check for required config ─────────────────────────────────
+
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    echo "ERROR: .env file not found. Copy .env.example to .env and fill in your NORDVPN_TOKEN."
+    exit 1
+fi
+
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/.env"
+
+if [ -z "${NORDVPN_TOKEN:-}" ]; then
+    echo "ERROR: NORDVPN_TOKEN is not set in .env"
+    exit 1
+fi
+
+# ── 1. Build images ──────────────────────────────────────────────
 
 echo ""
-echo "==> Building protonmail-bridge image..."
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" build protonmail-bridge
+echo "==> Building images..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" build
 
-# ── 2. Initialize bridge and log in (interactive) ──────────────
+# ── 2. Initialize bridge and log in (interactive) ───────────────
 
 echo ""
 echo "==> Initializing bridge (interactive login)..."
@@ -25,14 +40,19 @@ echo ""
 
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm protonmail-bridge init
 
-# ── 3. Start the stack ──────────────────────────────────────────
+# ── 3. Start the stack ───────────────────────────────────────────
 
 echo ""
-echo "==> Starting proton-bridge stack..."
+echo "==> Starting stack..."
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/.env"
+echo ""
+echo "==> Waiting for Meshnet to come up..."
+sleep 10
+
+echo ""
+echo "==> NordVPN Meshnet status:"
+docker exec nordvpn-meshnet nordvpn meshnet peer list 2>/dev/null || echo "    (run 'docker logs nordvpn-meshnet' to troubleshoot)"
 
 echo ""
 echo "========================================="
@@ -40,12 +60,15 @@ echo "  Setup complete!"
 echo "========================================="
 echo ""
 echo "  Email client configuration:"
-echo "    - Server:   <your-vpn-ip>"
-echo "    - IMAP port: ${IMAP_PORT} (STARTTLS)"
-echo "    - SMTP port: ${SMTP_PORT} (STARTTLS)"
+echo "    - Server:   <your-meshnet-hostname>.nord"
+echo "    - IMAP port: 143 (STARTTLS)"
+echo "    - SMTP port: 25  (STARTTLS)"
 echo "    - Username:  (from 'info' command above)"
 echo "    - Password:  (from 'info' command above)"
 echo ""
 echo "  Your email client will warn about the bridge's self-signed"
 echo "  certificate. Accept/trust it to proceed."
+echo ""
+echo "  To check your Meshnet address:"
+echo "    docker exec nordvpn-meshnet nordvpn meshnet peer list"
 echo ""
