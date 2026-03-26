@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "==> Starting D-Bus..."
+mkdir -p /run/dbus
+dbus-daemon --system --nofork &
+sleep 1
+
 echo "==> Starting NordVPN daemon..."
 nordvpnd &
 disown
