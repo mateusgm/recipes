@@ -3,7 +3,14 @@ set -euo pipefail
 
 echo "==> Starting NordVPN daemon..."
 /etc/init.d/nordvpn start
-sleep 5
+
+echo "==> Waiting for daemon..."
+for i in $(seq 1 30); do
+    if nordvpn status &>/dev/null; then
+        break
+    fi
+    sleep 1
+done
 
 echo "==> Disabling analytics prompts..."
 nordvpn set analytics off
