@@ -52,7 +52,7 @@ sleep 10
 
 echo ""
 echo "==> NordVPN Meshnet status:"
-docker exec nordvpn-meshnet nordvpn meshnet peer list 2>/dev/null || echo "    (run 'docker logs nordvpn-meshnet' to troubleshoot)"
+docker exec nordvpn-protonbridge nordvpn meshnet peer list 2>/dev/null || echo "    (run 'docker logs nordvpn-protonbridge' to troubleshoot)"
 
 echo ""
 echo "========================================="
@@ -70,5 +70,5 @@ echo "  Your email client will warn about the bridge's self-signed"
 echo "  certificate. Accept/trust it to proceed."
 echo ""
 echo "  To check your Meshnet address:"
-echo "    docker exec nordvpn-meshnet nordvpn meshnet peer list"
+echo "    docker exec nordvpn-protonbridge nordvpn meshnet peer list"
 echo ""

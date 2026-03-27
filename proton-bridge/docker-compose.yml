@@ -1,8 +1,8 @@
 services:
   nordvpn:
-    build: ./nordvpn
+    build: ../vpn-meshnet
     image: nordvpn-meshnet:local
-    container_name: nordvpn-meshnet
+    container_name: nordvpn-protonbridge
     cap_add:
       - NET_ADMIN
       - NET_RAW

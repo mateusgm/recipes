@@ -4,8 +4,23 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
-echo "==> GrapheneOS backup setup"
+echo "==> GrapheneOS backup + NordVPN Meshnet setup"
 echo "    Recipe dir: $SCRIPT_DIR"
+
+# ── 0. Check for NordVPN token ──────────────────────────────────
+
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    echo "ERROR: .env file not found. Copy .env.example to .env and fill in your values."
+    exit 1
+fi
+
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/.env"
+
+if [ -z "${NORDVPN_TOKEN:-}" ]; then
+    echo "ERROR: NORDVPN_TOKEN is not set in .env"
+    exit 1
+fi
 
 # ── 1. Collect secrets interactively ───────────────────────────────
 
@@ -57,6 +72,14 @@ docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
 # ── 6. Summary ─────────────────────────────────────────────────────
 
+echo ""
+echo "==> Waiting for Meshnet to come up..."
+sleep 10
+
+echo ""
+echo "==> NordVPN Meshnet status:"
+docker exec nordvpn-graphene nordvpn meshnet peer list 2>/dev/null || echo "    (run 'docker logs nordvpn-graphene' to troubleshoot)"
+
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/.env"
 
@@ -66,15 +89,19 @@ echo "  Setup complete!"
 echo "========================================="
 echo ""
 echo "  Services running:"
+echo "    - NordVPN Meshnet (nickname: ${MESHNET_NICKNAME:-graphene-backup})"
 echo "    - Caddy reverse proxy (HTTPS, port ${HTTPS_PORT:-8443})"
 echo "    - rclone WebDAV  (internal, behind Caddy)"
 echo "    - rclone sync    (cron: ${SYNC_SCHEDULE:-0 */6 * * *})"
 echo ""
 echo "  GrapheneOS Seedvault configuration:"
-echo "    - Server URL: https://<host>:${HTTPS_PORT:-8443}"
+echo "    - Server URL: https://${MESHNET_NICKNAME:-graphene-backup}.nord"
 echo "    - Username:   (from secrets.env WEBDAV_USER)"
 echo "    - Password:   (from secrets.env WEBDAV_PASS)"
 echo "    - Note: uses a self-signed certificate"
+echo ""
+echo "  Also reachable locally at:"
+echo "    https://<host>:${HTTPS_PORT:-8443}"
 echo ""
 echo "  Backups are stored locally at:"
 echo "    $SCRIPT_DIR/data/backups"
@@ -84,3 +111,6 @@ echo "    protondrive:${PROTON_REMOTE_PATH:-graphene-backups}"
 echo ""
 echo "  To trigger a manual sync:"
 echo "    docker exec rclone-sync rclone sync /data/backups protondrive:${PROTON_REMOTE_PATH:-graphene-backups} --config /config/rclone/rclone.conf -v"
+echo ""
+echo "  To check your Meshnet address:"
+echo "    docker exec nordvpn-graphene nordvpn meshnet peer list"

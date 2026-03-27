@@ -1,16 +1,36 @@
 services:
+  nordvpn:
+    build: ../vpn-meshnet
+    image: nordvpn-meshnet:local
+    container_name: nordvpn-graphene
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      - NORDVPN_TOKEN=${NORDVPN_TOKEN}
+      - MESHNET_NICKNAME=${MESHNET_NICKNAME:-graphene-backup}
+    ports:
+      - "${HTTPS_PORT}:443"
+    volumes:
+      - nordvpn_data:/var/lib/nordvpn
+    restart: unless-stopped
+
   caddy:
     image: caddy:2-alpine
     container_name: caddy-webdav
+    network_mode: "service:nordvpn"
     env_file:
       - .env
-    ports:
-      - "${HTTPS_PORT}:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
+      - nordvpn
       - rclone-webdav
     command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile --watch
     restart: unless-stopped
@@ -18,6 +38,7 @@ services:
   rclone-webdav:
     image: rclone/rclone:latest
     container_name: rclone-webdav
+    network_mode: "service:nordvpn"
     entrypoint: /bin/sh
     user: ${UID}:${GID}
     command:
@@ -30,8 +51,8 @@ services:
           --vfs-cache-mode writes
     env_file:
       - .env
-    expose:
-      - "8083"
+    depends_on:
+      - nordvpn
     volumes:
       - ./data:/data/backups
     restart: unless-stopped
@@ -55,5 +76,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  nordvpn_data:
   caddy_data:
   caddy_config:
