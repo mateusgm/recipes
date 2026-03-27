@@ -1,0 +1,19 @@
+TZ=Europe/Amsterdam
+
+# Sync schedule (cron expression for periodic sync to Proton Drive)
+SYNC_SCHEDULE=0 */6 * * *
+
+# HTTPS reverse proxy (Caddy with ACME-issued TLS via step-ca)
+HTTPS_PORT=8443
+
+# Hostname Caddy will request a certificate for (must resolve to this server)
+ACME_HOSTNAME=backup.lan
+
+# WebDAV (used by GrapheneOS Seedvault to connect)
+WEBDAV_USER=graphene
+WEBDAV_PASS={WEBDAV_PASS}
+
+# Proton Drive
+PROTON_REMOTE_PATH=graphene-backups
+PROTON_USERNAME=
+PROTON_PASSWORD_OBSCURED=
